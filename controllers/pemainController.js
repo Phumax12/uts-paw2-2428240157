@@ -1,10 +1,10 @@
 const pemain = require('../models/pemainModel');
-const Category = require('../models/categoriesModel');
+const Klub = require('../models/klub');
 const { errorHttp } = require('../middlewares/errorHandler');
 const LIMIT_DEFAULT = 10;
 const LIMIT_MAKS = 50;
-const FIELD_SORT = ['klub', 'kodepemain', 'createdAt'];
-const FIELD_BOLEH_DIPILIH = ['klub', 'kodepemain', 'nama', 'categoriesId', 'createdAt'];
+const FIELD_SORT = ['kodePemain', 'nama', 'rating', 'kategori', 'klubId', 'createdAt'];
+const FIELD_BOLEH_DIPILIH = ['kodePemain', 'nama', 'rating', 'kategori', 'kontak', 'klubId', 'createdAt'];
 
 // Mengubah bilangan dari query string menjadi bilangan bulat yang aman
 function angkaAman(nilai, bawaan, min, maks) {
@@ -14,26 +14,25 @@ function angkaAman(nilai, bawaan, min, maks) {
 }
 
 exports.create = async (req, res) => {
-  const { klub, kodepemain, rating, categoriesId } = req.body;
-  const business = await Business.create({ klub, kodepemain, rating, categoriesId });
-  res.status(201).json(business);
+  const { kodePemain, nama, rating, kategori, kontak, klubId } = req.body;
+  const data = await pemain.create({ kodePemain, nama, rating, kategori, kontak, klubId });
+  res.status(201).json(data);
 };
 
 exports.getAll = async (req, res) => {
   const filter = {};
-  if (req.query.alamat) {
-    filter['rating.alamat'] = String(req.query.alamat);
+  const kodeKlub = req.query.klub;
+  if (kodeKlub) {
+    const klub = await Klub.findOne({ kodeKlub: String(kodeKlub).toUpperCase() });
+    filter.klubId = klub ? klub._id : { $in: [] };
   }
-  const kodeKategori = req.query.kategori || req.query.prodi;
-  if (kodeKategori) {
-    const category = await Category.findOne({ kodeKategori: String(kodeKategori).toUpperCase() });
-    // Kode kategori tidak dikenal -> hasil kosong ($in: [] tidak cocok dengan apa pun)
-    filter.categoriesId = category ? category._id : { $in: [] };
+  if (req.query.kategori) {
+    filter.kategori = String(req.query.kategori).trim();
   }
   const page = angkaAman(req.query.page, 1, 1, Number.MAX_SAFE_INTEGER);
   const limit = angkaAman(req.query.limit, LIMIT_DEFAULT, 1, LIMIT_MAKS);
 
-  // Sorting: ?sort=klub (naik) atau ?sort=-klub (turun). Bawaan: terbaru dulu
+  // Sorting: ?sort=kodePemain (naik) atau ?sort=-kodePemain (turun). Bawaan: terbaru dulu
   const sortParam = String(req.query.sort || '-createdAt');
   const arah = sortParam.startsWith('-') ? -1 : 1;
   const sortField = sortParam.replace(/^-/, '');
@@ -41,7 +40,7 @@ exports.getAll = async (req, res) => {
     throw errorHttp(400, `sort hanya boleh: ${FIELD_SORT.join(', ')}`);
   }
 
-  // Projection: ?fields=klub,kodepemain
+  // Projection: ?fields=kodePemain,nama,kategori
   let select = '';
   if (req.query.fields) {
     const fields = String(req.query.fields).split(',').map((f) => f.trim());
@@ -57,8 +56,8 @@ exports.getAll = async (req, res) => {
     .skip((page - 1) * limit)
     .limit(limit);
 
-  if (!select || select.split(' ').includes('categoriesId')) {
-    query.populate('categoriesId', 'kodeKategori namaKategori');
+  if (!select || select.split(' ').includes('klubId')) {
+    query.populate('klubId', 'kodeKlub namaKlub');
   }
 
   const [data, total] = await Promise.all([query, pemain.countDocuments(filter)]);
@@ -66,16 +65,19 @@ exports.getAll = async (req, res) => {
   res.json({ data, page, limit, total, totalPages: Math.ceil(total / limit) });
 };
 exports.getById = async (req, res) => {
-  const data = await pemain.findById(req.params.id).populate('categoriesId');
+  const data = await pemain.findById(req.params.id).populate('klubId', 'kodeKlub namaKlub');
   if (!data) throw errorHttp(404, 'Data tidak ditemukan');
   res.json(data);
 };
 
 exports.update = async (req, res) => {
-  const { klub, kodepemain, rating, categoriesId } = req.body;
+  const fieldYangDiizinkan = ['kodePemain', 'nama', 'rating', 'kategori', 'kontak', 'klubId'];
+  const perubahan = Object.fromEntries(
+    Object.entries(req.body).filter(([field]) => fieldYangDiizinkan.includes(field))
+  );
   const data = await pemain.findByIdAndUpdate(
     req.params.id,
-    { klub, kodepemain, rating, categoriesId },
+    perubahan,
     { returnDocument: 'after', runValidators: true }
   );
   if (!data) throw errorHttp(404, 'Data tidak ditemukan');

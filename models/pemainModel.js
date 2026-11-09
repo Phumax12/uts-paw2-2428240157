@@ -1,15 +1,17 @@
 const mongoose = require('mongoose');
 
-const namaSchema = new mongoose.Schema({
-  nama: String,
-  rating: String,
+const kontakSchema = new mongoose.Schema({
+  telepon: String,
+  email: String,
 }, { _id: false });
 
 const pemainSchema = new mongoose.Schema({
-  klub: { type: String, required: [true, 'klub wajib diisi'], trim: true },
-  nama: namaSchema,
-  categoriesId: { type: mongoose.Schema.Types.ObjectId, ref: 'Kategori' },
-  kodepemain: { type: String, required: [true, 'kodepemain wajib diisi'], unique: true, trim: true },
+  kodePemain: { type: String, required: [true, 'kodePemain wajib diisi'], unique: true, trim: true },
+  nama: { type: String, required: [true, 'nama wajib diisi'], trim: true },
+  rating: { type: Number, required: [true, 'rating wajib diisi'], min: [0, 'rating minimal 0'] },
+  kategori: { type: String, required: [true, 'kategori wajib diisi'], trim: true },
+  kontak: { type: kontakSchema, default: undefined },
+  klubId: { type: mongoose.Schema.Types.ObjectId, ref: 'Klub', required: [true, 'klubId wajib diisi'] },
   createdAt: { type: Date, default: Date.now },
 });
 

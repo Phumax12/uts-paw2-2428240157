@@ -7,7 +7,7 @@ exports.create = async (req, res) => {
 };
 
 exports.getAll = async (req, res) => {
-  res.json(await Klub.find().sort({ namaKlub: 1 }));
+  res.json(await Klub.find().sort({ nama: 1 }));
 };
 
 exports.getById = async (req, res) => {

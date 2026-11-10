@@ -57,7 +57,7 @@ exports.getAll = async (req, res) => {
     .limit(limit);
 
   if (!select || select.split(' ').includes('klubId')) {
-    query.populate('klubId', 'kodeKlub namaKlub');
+    query.populate('klubId', 'kode nama');
   }
 
   const [data, total] = await Promise.all([query, pemain.countDocuments(filter)]);
@@ -65,7 +65,7 @@ exports.getAll = async (req, res) => {
   res.json({ data, page, limit, total, totalPages: Math.ceil(total / limit) });
 };
 exports.getById = async (req, res) => {
-  const data = await pemain.findById(req.params.id).populate('klubId', 'kodeKlub namaKlub');
+  const data = await pemain.findById(req.params.id).populate('klubId', 'kode nama');
   if (!data) throw errorHttp(404, 'Data tidak ditemukan');
   res.json(data);
 };

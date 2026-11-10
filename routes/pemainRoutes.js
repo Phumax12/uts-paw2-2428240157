@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const c = require('../controllers/pemainController');
+const pemainController = require('../controllers/pemainController');
 const cekApiKey = require('../middlewares/cekApiKey');
 
-router.get('/', c.getAll);
-router.get('/:id', c.getById);
-router.post('/', cekApiKey, c.create);
-router.put('/:id', cekApiKey, c.update);
-router.delete('/:id', cekApiKey, c.remove);
+router.get('/', pemainController.getAll);
+router.get('/:id', pemainController.getById);
+router.post('/', cekApiKey, pemainController.create);
+router.put('/:id', cekApiKey, pemainController.update);
+router.delete('/:id', cekApiKey, pemainController.remove);
 
 module.exports = router;
